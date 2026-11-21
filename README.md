@@ -19,26 +19,30 @@ Requires Node.js 26 (pinned in `.node-version`; the project is built and tested 
 current desktop browser (Chrome or Edge recommended; the project database uses the
 origin-private file system).
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare)
 
 TLCAD is a static web application: everything, including the SQLite project database, runs in
-the browser, so no server or Cloudflare Worker is needed. The database uses the OPFS SAH-pool
-mode, which needs no cross-origin isolation headers.
+the browser, so there is no server code. The database uses the OPFS SAH-pool mode, which needs
+no cross-origin isolation headers.
 
-Cloudflare dashboard ▸ Workers & Pages ▸ Create ▸ Pages ▸ Connect to Git, choose this
-repository, then:
+**Cloudflare Workers (static assets)** — Cloudflare dashboard ▸ Workers & Pages ▸ Create
+application ▸ Continue with GitHub, choose this repository, then:
 
 | Setting | Value |
 |---|---|
-| Production branch | `main` |
-| Framework preset | None |
+| Project (Worker) name | `plscadd-project` (must match `name` in `wrangler.jsonc`) |
 | Build command | `npm run build` |
-| Build output directory | `apps/web/dist` |
-| Root directory | *(leave empty — the repository root)* |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+
+`wrangler.jsonc` serves `apps/web/dist` as static assets. The site is then at
+`https://plscadd-project.<your-subdomain>.workers.dev`.
+
+**Cloudflare Pages (alternative)** — Create application ▸ Continue to Pages ▸ Connect to Git;
+build command `npm run build`, build output directory `apps/web/dist`, framework preset None.
 
 Cloudflare reads the Node version from `.node-version`. `apps/web/public/_headers` gives the
-hashed files in `/assets` a one-year cache. Every push to `main` redeploys; pull requests get
-preview URLs.
+hashed files in `/assets` a one-year cache. Every push to `main` redeploys.
 
 Each visitor's projects are stored in their own browser, on that site's address only: projects
 saved on `localhost` do not appear on the deployed site and vice versa. Move a project between

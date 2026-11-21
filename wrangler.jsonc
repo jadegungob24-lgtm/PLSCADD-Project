@@ -1,0 +1,11 @@
+// Cloudflare Workers deployment: a static-assets-only Worker serving the Vite build.
+// Workers Builds: build command `npm run build`, deploy command `npx wrangler deploy`, root `/`.
+// The name must match the Worker created in the Cloudflare dashboard.
+{
+  "name": "plscadd-project",
+  "compatibility_date": "2026-11-18",
+  "assets": {
+    "directory": "./apps/web/dist",
+    "not_found_handling": "single-page-application"
+  }
+}
