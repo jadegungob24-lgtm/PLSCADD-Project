@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.vite/
+coverage/
+# Local tool settings
+.claude/
+# OS files
+Thumbs.db
+.DS_Store

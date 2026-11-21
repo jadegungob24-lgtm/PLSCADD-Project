@@ -1,0 +1,276 @@
+{
+ "notes": "Demo Line criteria: illustrative values only.",
+ "weatherCases": [
+  {
+   "id": "ed",
+   "name": "Everyday 15C",
+   "airDensity": 0.613,
+   "windPressure": 0,
+   "iceThickness": 0,
+   "iceDensity": 0,
+   "iceLoad": 0,
+   "temperature": 15,
+   "weatherLoadFactor": 1,
+   "nescK": 0,
+   "gustFactor": 1,
+   "src": "user"
+  },
+  {
+   "id": "hot",
+   "name": "Hot 75C",
+   "airDensity": 0.613,
+   "windPressure": 0,
+   "iceThickness": 0,
+   "iceDensity": 0,
+   "iceLoad": 0,
+   "temperature": 75,
+   "weatherLoadFactor": 1,
+   "nescK": 0,
+   "gustFactor": 1,
+   "src": "user"
+  },
+  {
+   "id": "cold",
+   "name": "Cold -10C",
+   "airDensity": 0.613,
+   "windPressure": 0,
+   "iceThickness": 0,
+   "iceDensity": 0,
+   "iceLoad": 0,
+   "temperature": -10,
+   "weatherLoadFactor": 1,
+   "nescK": 0,
+   "gustFactor": 1,
+   "src": "user"
+  },
+  {
+   "id": "wind",
+   "name": "High wind",
+   "airDensity": 0.613,
+   "windPressure": 700,
+   "iceThickness": 0,
+   "iceDensity": 0,
+   "iceLoad": 0,
+   "temperature": 10,
+   "weatherLoadFactor": 1,
+   "nescK": 0,
+   "gustFactor": 1,
+   "src": "user"
+  },
+  {
+   "id": "ice",
+   "name": "Ice 12 mm",
+   "airDensity": 0.613,
+   "windPressure": 0,
+   "iceThickness": 0.012,
+   "iceDensity": 8820,
+   "iceLoad": 0,
+   "temperature": 0,
+   "weatherLoadFactor": 1,
+   "nescK": 0,
+   "gustFactor": 1,
+   "src": "user"
+  },
+  {
+   "id": "gal",
+   "name": "Galloping swing",
+   "airDensity": 0.613,
+   "windPressure": 96,
+   "iceThickness": 0.012,
+   "iceDensity": 8820,
+   "iceLoad": 0,
+   "temperature": 0,
+   "weatherLoadFactor": 1,
+   "nescK": 0,
+   "gustFactor": 1,
+   "src": "user"
+  }
+ ],
+ "creepWeatherId": "ed",
+ "loadWeatherId": "ice",
+ "tensionLimits": [
+  {
+   "id": "tl1",
+   "weatherId": "ed",
+   "condition": "initial",
+   "maxPercentUltimate": 25,
+   "maxTension": null,
+   "maxCatenary": null,
+   "cableIds": []
+  },
+  {
+   "id": "tl2",
+   "weatherId": "wind",
+   "condition": "initial",
+   "maxPercentUltimate": 50,
+   "maxTension": null,
+   "maxCatenary": null,
+   "cableIds": []
+  },
+  {
+   "id": "tl3",
+   "weatherId": "ice",
+   "condition": "initial",
+   "maxPercentUltimate": 50,
+   "maxTension": null,
+   "maxCatenary": null,
+   "cableIds": []
+  }
+ ],
+ "autosagLimits": [
+  {
+   "id": "al1",
+   "weatherId": "ed",
+   "condition": "initial",
+   "maxPercentUltimate": 20,
+   "maxTension": null,
+   "maxCatenary": null,
+   "cableIds": []
+  },
+  {
+   "id": "al2",
+   "weatherId": "cold",
+   "condition": "initial",
+   "maxPercentUltimate": 30,
+   "maxTension": null,
+   "maxCatenary": null,
+   "cableIds": []
+  }
+ ],
+ "weightSpanConditions": [
+  {
+   "weatherId": "cold",
+   "condition": "initial"
+  },
+  {
+   "weatherId": "ice",
+   "condition": "initial"
+  },
+  {
+   "weatherId": "wind",
+   "condition": "initial"
+  }
+ ],
+ "swingConditions": [
+  {
+   "weatherId": "ed",
+   "condition": "creep"
+  },
+  {
+   "weatherId": "cold",
+   "condition": "initial"
+  },
+  {
+   "weatherId": "wind",
+   "condition": "initial"
+  },
+  {
+   "weatherId": null,
+   "condition": "initial"
+  }
+ ],
+ "surveyClearance": {
+  "conditions": [
+   {
+    "weatherId": "hot",
+    "condition": "creep"
+   },
+   {
+    "weatherId": "ice",
+    "condition": "load"
+   },
+   {
+    "weatherId": "wind",
+    "condition": "initial"
+   }
+  ],
+  "type": "rectangular",
+  "maxHorizontal": null
+ },
+ "clearanceLine": {
+  "voltageKV": 230,
+  "groundCode": 2
+ },
+ "wireClearance": {
+  "source": {
+   "voltageKV": null,
+   "weatherId": "ice",
+   "condition": "initial",
+   "wind": "right",
+   "straight": false,
+   "iceJump": true
+  },
+  "target": {
+   "voltageKV": null,
+   "weatherId": "ice",
+   "condition": "initial",
+   "wind": "right",
+   "straight": false,
+   "iceJump": false
+  },
+  "measure": "3d",
+  "required": [
+   {
+    "sourceKV": 230,
+    "targetKV": 230,
+    "distance": 2
+   }
+  ]
+ },
+ "galloping": {
+  "method": "reaSingle",
+  "sag": {
+   "weatherId": "ice",
+   "condition": "initial"
+  },
+  "swing": {
+   "weatherId": "gal",
+   "condition": "initial"
+  },
+  "gsf": 1,
+  "eswZero": false
+ },
+ "loadCases": [
+  {
+   "id": "lc1",
+   "name": "High wind NA+",
+   "weatherId": "wind",
+   "condition": "initial",
+   "windDirection": "NA+",
+   "wb": 0,
+   "lfv": 1.1,
+   "lfw": 1.2,
+   "lft": 1.1,
+   "lfs": 1.1
+  },
+  {
+   "id": "lc2",
+   "name": "High wind NA-",
+   "weatherId": "wind",
+   "condition": "initial",
+   "windDirection": "NA-",
+   "wb": 0,
+   "lfv": 1.1,
+   "lfw": 1.2,
+   "lft": 1.1,
+   "lfs": 1.1
+  },
+  {
+   "id": "lc3",
+   "name": "Ice",
+   "weatherId": "ice",
+   "condition": "initial",
+   "windDirection": "NA+",
+   "wb": 0,
+   "lfv": 1.2,
+   "lfw": 1,
+   "lft": 1.2,
+   "lfs": 1.1
+  }
+ ],
+ "display": {
+  "weatherId": null,
+  "condition": "initial",
+  "wind": "right"
+ }
+}

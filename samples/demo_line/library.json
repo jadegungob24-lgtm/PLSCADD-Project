@@ -1,0 +1,273 @@
+{
+ "format": "tlcad-library",
+ "version": 1,
+ "cables": [
+  {
+   "id": "demo-cable",
+   "name": "Demo conductor (illustrative)",
+   "description": "Illustrative values only, not manufacturer data",
+   "stockNumber": "DEMO-COND",
+   "model": "linear",
+   "area": 0.0004,
+   "diameter": 0.0259,
+   "unitWeight": 15.3,
+   "ultimateTension": 125000,
+   "independentCables": 1,
+   "gapType": false,
+   "testTemperature": 20,
+   "outer": {
+    "finalModulus": 700000000,
+    "thermalCoeff": 0.000019,
+    "initial": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "creep": [
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "core": null,
+   "creepTemperatureShift": 15,
+   "outerCompression": {
+    "mode": "criteria",
+    "limit": 0
+   },
+   "color": "#d33c2f",
+   "testData": null,
+   "src": "user"
+  }
+ ],
+ "structures": [
+  {
+   "id": "demo-tangent",
+   "name": "Demo tangent 27",
+   "description": "Illustrative horizontal-configuration tangent",
+   "height": 27,
+   "embedment": 3,
+   "cost": null,
+   "autoSpotMinAngle": 0,
+   "material": [],
+   "src": "user",
+   "strength": {
+    "method": "method1",
+    "validity": "Illustrative allowable spans",
+    "rows": [
+     {
+      "lineAngle": 0,
+      "maxWindSpan": 400,
+      "maxWeightSpan": [
+       500,
+       500,
+       500
+      ],
+      "minWeightSpan": 0
+     },
+     {
+      "lineAngle": 2,
+      "maxWindSpan": 350,
+      "maxWeightSpan": [
+       450,
+       450,
+       450
+      ],
+      "minWeightSpan": 0
+     }
+    ],
+    "ranges": []
+   },
+   "attachments": [
+    {
+     "set": 1,
+     "phase": 1,
+     "deadEnd": false,
+     "setDescription": "",
+     "insulator": "suspension",
+     "weight": 600,
+     "windArea": 0.25,
+     "length": 2.4,
+     "x": -6,
+     "y": 2,
+     "z": 0,
+     "minVertical": {
+      "kind": "noUplift",
+      "value": 0
+     },
+     "swing": [
+      [
+       -60,
+       60
+      ],
+      [
+       -60,
+       60
+      ],
+      [
+       -70,
+       70
+      ],
+      [
+       -60,
+       60
+      ]
+     ],
+     "part2": null
+    },
+    {
+     "set": 1,
+     "phase": 2,
+     "deadEnd": false,
+     "setDescription": "",
+     "insulator": "suspension",
+     "weight": 600,
+     "windArea": 0.25,
+     "length": 2.4,
+     "x": 0,
+     "y": 2,
+     "z": 0,
+     "minVertical": {
+      "kind": "noUplift",
+      "value": 0
+     },
+     "swing": [
+      [
+       -60,
+       60
+      ],
+      [
+       -60,
+       60
+      ],
+      [
+       -70,
+       70
+      ],
+      [
+       -60,
+       60
+      ]
+     ],
+     "part2": null
+    },
+    {
+     "set": 1,
+     "phase": 3,
+     "deadEnd": false,
+     "setDescription": "",
+     "insulator": "suspension",
+     "weight": 600,
+     "windArea": 0.25,
+     "length": 2.4,
+     "x": 6,
+     "y": 2,
+     "z": 0,
+     "minVertical": {
+      "kind": "noUplift",
+      "value": 0
+     },
+     "swing": [
+      [
+       -60,
+       60
+      ],
+      [
+       -60,
+       60
+      ],
+      [
+       -70,
+       70
+      ],
+      [
+       -60,
+       60
+      ]
+     ],
+     "part2": null
+    }
+   ]
+  },
+  {
+   "id": "demo-deadend",
+   "name": "Demo dead end 24",
+   "description": "Illustrative angle / dead-end structure",
+   "height": 24,
+   "embedment": 3.5,
+   "cost": null,
+   "autoSpotMinAngle": 0,
+   "material": [],
+   "src": "user",
+   "strength": {
+    "method": "none",
+    "validity": "",
+    "rows": [],
+    "ranges": []
+   },
+   "attachments": [
+    {
+     "set": 1,
+     "phase": 1,
+     "deadEnd": true,
+     "setDescription": "",
+     "insulator": "strain",
+     "weight": 900,
+     "windArea": 0,
+     "length": 3,
+     "x": -6,
+     "y": 2,
+     "z": 0,
+     "minVertical": {
+      "kind": "noLimit",
+      "value": 0
+     },
+     "swing": null,
+     "part2": null
+    },
+    {
+     "set": 1,
+     "phase": 2,
+     "deadEnd": true,
+     "setDescription": "",
+     "insulator": "strain",
+     "weight": 900,
+     "windArea": 0,
+     "length": 3,
+     "x": 0,
+     "y": 2,
+     "z": 0,
+     "minVertical": {
+      "kind": "noLimit",
+      "value": 0
+     },
+     "swing": null,
+     "part2": null
+    },
+    {
+     "set": 1,
+     "phase": 3,
+     "deadEnd": true,
+     "setDescription": "",
+     "insulator": "strain",
+     "weight": 900,
+     "windArea": 0,
+     "length": 3,
+     "x": 6,
+     "y": 2,
+     "z": 0,
+     "minVertical": {
+      "kind": "noLimit",
+      "value": 0
+     },
+     "swing": null,
+     "part2": null
+    }
+   ]
+  }
+ ]
+}

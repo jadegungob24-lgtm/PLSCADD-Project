@@ -1,0 +1,174 @@
+{
+ "generated": "2026-11-19T09:43:45.602Z",
+ "points": 648,
+ "structures": 7,
+ "sheets": 5,
+ "sections": [
+  {
+   "span": "1-4",
+   "rulingSpan": 277.25767949456133,
+   "H": 24909.644436546838
+  },
+  {
+   "span": "4-7",
+   "rulingSpan": 298.3084386149237,
+   "H": 24895.332911655714
+  }
+ ],
+ "limits": [
+  {
+   "section": "1-4",
+   "limit": "tl1",
+   "usage": 79.99999999773183,
+   "ok": true
+  },
+  {
+   "section": "1-4",
+   "limit": "tl2",
+   "usage": 56.20884235564312,
+   "ok": true
+  },
+  {
+   "section": "1-4",
+   "limit": "tl3",
+   "usage": 65.66261875093885,
+   "ok": true
+  },
+  {
+   "section": "4-7",
+   "limit": "tl1",
+   "usage": 79.99999996398739,
+   "ok": true
+  },
+  {
+   "section": "4-7",
+   "limit": "tl2",
+   "usage": 56.724866077332635,
+   "ok": true
+  },
+  {
+   "section": "4-7",
+   "limit": "tl3",
+   "usage": 66.27887829925564,
+   "ok": true
+  }
+ ],
+ "structures_": [
+  {
+   "no": 1,
+   "type": "Demo dead end 24",
+   "windSpan": 138.3145785405295,
+   "weightSpans": [
+    58.7656115214489,
+    77.16376090159008,
+    42.777415409391
+   ],
+   "swingMax": null,
+   "swingOk": true,
+   "method1": null,
+   "uplift": 0
+  },
+  {
+   "no": 2,
+   "type": "Demo tangent 27",
+   "windSpan": 278.07026985612663,
+   "weightSpans": [
+    415.52669648817186,
+    384.15675176929176,
+    442.92140784130555
+   ],
+   "swingMax": 35.98194308334976,
+   "swingOk": true,
+   "method1": 88.5842815682611,
+   "uplift": 0
+  },
+  {
+   "no": 3,
+   "type": "Demo tangent 27",
+   "windSpan": 277.97299192885873,
+   "weightSpans": [
+    256.664183075126,
+    261.78851872996876,
+    252.2736446999458
+   ],
+   "swingMax": 51.06150291071036,
+   "swingOk": true,
+   "method1": 69.49324798221468,
+   "uplift": 0
+  },
+  {
+   "no": 4,
+   "type": "Demo dead end 24",
+   "windSpan": 288.5126362487164,
+   "weightSpans": [
+    454.8643426809604,
+    420.9504401645746,
+    494.2728952283884
+   ],
+   "swingMax": null,
+   "swingOk": true,
+   "method1": null,
+   "uplift": 0
+  },
+  {
+   "no": 5,
+   "type": "Demo tangent 27",
+   "windSpan": 302.6871831992786,
+   "weightSpans": [
+    -161.3289434894163,
+    -63.78295595938039,
+    -268.7620246034469
+   ],
+   "swingMax": 179.99999999999994,
+   "swingOk": false,
+   "method1": 75.67179579981965,
+   "uplift": 9
+  },
+  {
+   "no": 6,
+   "type": "Demo tangent 27",
+   "windSpan": 301.81940684227845,
+   "weightSpans": [
+    578.6324460712971,
+    520.8598123656502,
+    642.4277643448337
+   ],
+   "swingMax": 28.89523058636113,
+   "swingOk": true,
+   "method1": 128.48555286896675,
+   "uplift": 0
+  },
+  {
+   "no": 7,
+   "type": "Demo dead end 24",
+   "windSpan": 149.42755927845465,
+   "weightSpans": [
+    135.374080572752,
+    138.45013074408945,
+    132.0347885462636
+   ],
+   "swingMax": null,
+   "swingOk": true,
+   "method1": null,
+   "uplift": 0
+  }
+ ],
+ "survey": {
+  "checked": 627,
+  "violations": [],
+  "questionable": 43
+ },
+ "tinMin": 3.6492189032734874,
+ "wiresMin": 5.842457528113654,
+ "gallopingOverlaps": 0,
+ "cableLength": 5217.233879238697,
+ "undoSteps": 17,
+ "timesMs": {
+  "import": 30.8,
+  "autosag": 29.6,
+  "checks": 208.8,
+  "sheets": 10.5,
+  "reports": 66.3,
+  "total": 602
+ }
+}

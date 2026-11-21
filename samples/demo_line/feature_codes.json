@@ -1,0 +1,59 @@
+{
+ "voltages": [
+  230
+ ],
+ "codes": [
+  {
+   "code": 2,
+   "description": "Ground",
+   "onGround": true,
+   "aerial": false,
+   "color": "#7fd08a",
+   "clearances": {
+    "230": {
+     "rv": 7,
+     "rh": null
+    }
+   }
+  },
+  {
+   "code": 300,
+   "description": "Road",
+   "onGround": true,
+   "aerial": false,
+   "color": "#c0c0c0",
+   "clearances": {
+    "230": {
+     "rv": 8.5,
+     "rh": null
+    }
+   }
+  },
+  {
+   "code": 310,
+   "description": "Building",
+   "onGround": false,
+   "aerial": false,
+   "color": "#e05d4f",
+   "clearances": {
+    "230": {
+     "rv": 5,
+     "rh": 3
+    }
+   }
+  },
+  {
+   "code": 400,
+   "description": "Distribution line",
+   "onGround": false,
+   "aerial": true,
+   "color": "#4f8ff7",
+   "clearances": {
+    "230": {
+     "rv": 2.5,
+     "rh": null
+    }
+   }
+  }
+ ]
+}
