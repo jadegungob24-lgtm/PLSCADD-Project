@@ -3,10 +3,10 @@ import {
   fromSI, makeTransformer, toSI, unitLabel, utmDefinition, validateCrsDefinition, WGS84_GEOGRAPHIC, FT, type Transformer,
 } from '@tlcad/engine';
 import { makeFeatureCode, newId, type FeatureCode, type Project, type TerrainPoint } from '@tlcad/model';
-import { demPointCount, sniffDelimited, splitDelimited, type Delimiter, type DelimitedOptions } from '@tlcad/io';
+import { demPointCount, guessColumns, sniffDelimited, splitDelimited, type Delimiter, type DelimitedOptions } from '@tlcad/io';
 import { useApp } from '../store/appStore';
 import {
-  createInterpolatedPoints, finishCsvImport, finishDemImport, finishLasImport, finishPflImport, MAX_IMPORT_POINTS, setProjectCrs,
+  beginPastedImport, createInterpolatedPoints, finishCsvImport, finishDemImport, finishLasImport, finishPflImport, MAX_IMPORT_POINTS, setProjectCrs,
   type PendingDem, type PendingLas,
 } from '../commands/terrain';
 import { computeDerived, activeIndex } from '../store/derived';
@@ -15,20 +15,31 @@ import { tidy } from './props';
 
 const DELIMS: [Delimiter, string][] = [[',', 'Comma'], [';', 'Semicolon'], ['\t', 'Tab'], [' ', 'Spaces']];
 
-/** Column mapping for delimited survey files (manual App. D.3). */
+/** Column mapping for delimited survey files and Excel sheets (manual App. D.3). Re-created when another sheet is chosen. */
 export function CsvImportDialog({ close }: { close: () => void }) {
+  const file = useApp((s) => s.pendingFile);
+  if (!file) return null;
+  return <CsvImportForm key={file.text} close={close} />;
+}
+
+function CsvImportForm({ close }: { close: () => void }) {
   const file = useApp((s) => s.pendingFile);
   const sys = useApp((s) => s.project?.settings.unitSystem ?? 'SI_N');
   const hasCrs = useApp((s) => !!s.project?.settings.crs);
+  const hasTin = useApp((s) => !!s.project?.settings.terrain.tinEnabled);
   const sniff = useMemo(() => sniffDelimited(file?.text ?? ''), [file]);
-  const [o, setO] = useState<DelimitedOptions>(() => ({
-    delimiter: sniff.delimiter, skipLines: sniff.skipLines,
-    // Starting guess only: three columns are read as X Y Z, more as point number then X Y Z.
-    colX: sniff.columns >= 4 ? 2 : 1, colY: sniff.columns >= 4 ? 3 : 2, colZ: sniff.columns >= 4 ? 4 : 3,
-    colDesc: 0, colCode: 0, colH: 0, defaultCode: 200, unit: sys === 'US' ? 'ft' : 'm',
-  }));
+  const [o, setO] = useState<DelimitedOptions>(() => {
+    // Starting guess only, from which columns hold numbers: X, Y, then Z if there is a third numeric column.
+    const g = guessColumns(file?.text ?? '', sniff.delimiter, sniff.skipLines);
+    return {
+      delimiter: sniff.delimiter, skipLines: sniff.skipLines, ...g, colCode: 0, colH: 0, defaultCode: 200, unit: sys === 'US' ? 'ft' : 'm',
+      zMode: g.colZ ? 'column' : hasTin ? 'surface' : 'constant', zConstant: 0,
+    };
+  });
   const [lonLat, setLonLat] = useState(false);
+  const [zText, setZText] = useState('0');
   if (!file) return null;
+  const zMode = o.zMode ?? 'column';
 
   const lines = file.text.split(/\r?\n/).filter((l) => l.trim() !== '');
   const rows = lines.slice(0, 9).map((l) => splitDelimited(l, o.delimiter));
@@ -44,21 +55,31 @@ export function CsvImportDialog({ close }: { close: () => void }) {
     </div>
   );
   const role = (c: number) =>
-    c === o.colX ? 'X' : c === o.colY ? 'Y' : c === o.colZ ? 'Z' : c === o.colDesc ? 'Desc' : c === o.colCode ? 'Code' : c === o.colH ? 'Height' : '';
-  const picked = [o.colX, o.colY, o.colZ, o.colDesc, o.colCode, o.colH].filter((c) => c > 0);
-  const error = [o.colX, o.colY, o.colZ].some((c) => c < 1 || c > ncol) ? 'Select columns for X, Y and Z.'
+    c === o.colX ? 'X' : c === o.colY ? 'Y' : zMode === 'column' && c === o.colZ ? 'Z' : c === o.colDesc ? 'Desc' : c === o.colCode ? 'Code' : c === o.colH ? 'Height' : '';
+  const picked = [o.colX, o.colY, zMode === 'column' ? o.colZ : 0, o.colDesc, o.colCode, o.colH].filter((c) => c > 0);
+  const error = [o.colX, o.colY, ...(zMode === 'column' ? [o.colZ] : [])].some((c) => c < 1 || c > ncol) ? (zMode === 'column' ? 'Select columns for X, Y and Z, or take elevations from the TIN or one value.' : 'Select columns for X and Y.')
+    : zMode === 'constant' && !Number.isFinite(Number(zText)) ? 'Enter the elevation as a number.'
+    : zMode === 'surface' && !hasTin ? 'Elevations from the TIN need the TIN (Terrain ▸ Use TIN).'
     : new Set(picked).size !== picked.length ? 'A column is selected for more than one field.'
       : !Number.isInteger(o.defaultCode) ? 'The default feature code must be a whole number.' : null;
 
   return (
     <Modal
-      title={`Import Survey Points — ${file.name}`} onClose={close} width={860}
+      title={`Import Points — ${file.name}`} onClose={close} width={860}
       footer={<>
         {error && <span style={{ color: 'var(--err)', marginRight: 'auto' }}>{error}</span>}
         <button className="btn" onClick={close}>Cancel</button>
-        <button className="btn primary" disabled={!!error} onClick={() => finishCsvImport(o, lonLat)}>Import</button>
+        <button className="btn primary" disabled={!!error} onClick={() => finishCsvImport({ ...o, colZ: zMode === 'column' ? o.colZ : 0, zConstant: Number(zText) }, lonLat)}>Import and show in plan</button>
       </>}
     >
+      {file.sheets && file.sheets.length > 1 && (
+        <div className="field" style={{ gridTemplateColumns: '150px 1fr', marginBottom: 6 }}>
+          <label>Excel sheet</label>
+          <select value={file.sheets.find((s) => s.text === file.text)?.name ?? ''} onChange={(e) => { const s = file.sheets!.find((k) => k.name === e.target.value); if (s) useApp.getState().setPendingFile({ ...file, text: s.text }, 'importCsv'); }}>
+            {file.sheets.map((s) => <option key={s.name} value={s.name}>{s.name}{s.text.trim() ? '' : ' (empty)'}</option>)}
+          </select>
+        </div>
+      )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
         <div>
           <div className="field" style={{ gridTemplateColumns: '150px 1fr' }}>
@@ -89,15 +110,30 @@ export function CsvImportDialog({ close }: { close: () => void }) {
         <div>
           {sel('X (easting)', 'colX', false)}
           {sel('Y (northing)', 'colY', false)}
-          {sel('Z (elevation)', 'colZ', false)}
+          <div className="field" style={{ gridTemplateColumns: '150px 1fr' }}>
+            <label>Elevation from</label>
+            <select value={zMode} onChange={(e) => setO({ ...o, zMode: e.target.value as 'column' | 'constant' | 'surface', colZ: e.target.value === 'column' && o.colZ === 0 ? Math.min(3, ncol) : o.colZ })}>
+              <option value="column">A column of the file</option>
+              <option value="surface" disabled={!hasTin}>The TIN surface{hasTin ? '' : ' (TIN not enabled)'}</option>
+              <option value="constant">One value for all points</option>
+            </select>
+          </div>
+          {zMode === 'column' && sel('Z (elevation)', 'colZ', false)}
+          {zMode === 'constant' && (
+            <div className="field" style={{ gridTemplateColumns: '150px 1fr' }}>
+              <label>Elevation ({o.unit})</label>
+              <input value={zText} onChange={(e) => setZText(e.target.value)} inputMode="decimal" />
+            </div>
+          )}
           {sel('Description', 'colDesc', true)}
           {sel('Feature code', 'colCode', true)}
           {sel('Obstacle height', 'colH', true)}
         </div>
       </div>
       <div className="muted" style={{ margin: '8px 0 4px' }}>
-        First lines of the file ({lines.length} non-blank lines). Check that the column roles are right before importing; the
-        delimiter, heading lines and X/Y/Z columns above are a first guess from the file contents.
+        First lines ({lines.length} non-blank lines). Check that the column roles are right before importing; the delimiter,
+        heading lines and columns above are a first guess from the contents. Numbers copied from Excel with thousands separators
+        (1,234.56) are read when the delimiter is not a comma.{zMode !== 'column' ? ' Points without surveyed elevations are plot points: new feature codes are created off the ground, so the TIN and ground profiles do not change, and they are drawn as labelled rings in the plan view.' : ''}{zMode === 'surface' ? ' Each point takes the TIN elevation at its X, Y; points outside the TIN are skipped.' : ''}
       </div>
       <div className="scroll" style={{ maxHeight: 220 }}>
         <table className="grid">
@@ -112,6 +148,28 @@ export function CsvImportDialog({ close }: { close: () => void }) {
           </tbody>
         </table>
       </div>
+    </Modal>
+  );
+}
+
+/** Coordinates pasted from Excel (or any table): the cells are then mapped like a file. */
+export function PastePointsDialog({ close }: { close: () => void }) {
+  const [text, setText] = useState('');
+  const rows = text.split(/\r?\n/).filter((l) => l.trim() !== '').length;
+  return (
+    <Modal title="Paste Points from Excel" onClose={close} width={640}
+      footer={<>
+        <span className="muted" style={{ marginRight: 'auto' }}>{rows ? `${rows} row(s)` : ''}</span>
+        <button className="btn" onClick={close}>Cancel</button>
+        <button className="btn primary" disabled={!rows} onClick={() => beginPastedImport(text)}>Next: map columns</button>
+      </>}>
+      <div style={{ marginBottom: 6 }}>
+        In Excel, select the cells with the coordinates (a heading row is fine), copy them with Ctrl+C, and paste them here with Ctrl+V.
+        Columns can be in any order: you choose which is X (easting), Y (northing) and, if present, elevation, description and feature code next.
+      </div>
+      <textarea autoFocus value={text} onChange={(e) => setText(e.target.value)} spellCheck={false}
+        placeholder={'Point\tEasting\tNorthing\tElevation\nP1\t500120.5\t1650340.2\t152.3'}
+        style={{ width: '100%', height: 260, fontFamily: 'var(--mono)', fontSize: 12, whiteSpace: 'pre' }} />
     </Modal>
   );
 }

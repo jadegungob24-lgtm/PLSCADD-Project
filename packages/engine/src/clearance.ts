@@ -232,6 +232,24 @@ export function indexTin(tin: Tin, cell: number): TinIndex {
   return { tin, cell, x0, y0, nx, ny, cells };
 }
 
+/** Elevation of the TIN surface at a plan point, using the grid index (null outside the surface). */
+export function elevationOnTin(ix: TinIndex, x: number, y: number): number | null {
+  const v = ix.tin.vertices, tr = ix.tin.triangles;
+  const i = Math.floor((x - ix.x0) / ix.cell), j = Math.floor((y - ix.y0) / ix.cell);
+  if (i < 0 || j < 0 || i > ix.nx || j > ix.ny) return null;
+  for (const t of ix.cells.get(j * (ix.nx + 1) + i) ?? []) {
+    const a = tr[t * 3]! * 3, b = tr[t * 3 + 1]! * 3, c = tr[t * 3 + 2]! * 3;
+    const x1 = v[a]!, y1 = v[a + 1]!, x2 = v[b]!, y2 = v[b + 1]!, x3 = v[c]!, y3 = v[c + 1]!;
+    const det = (y2 - y3) * (x1 - x3) + (x3 - x2) * (y1 - y3);
+    if (det === 0) continue;
+    const l1 = ((y2 - y3) * (x - x3) + (x3 - x2) * (y - y3)) / det;
+    const l2 = ((y3 - y1) * (x - x3) + (x1 - x3) * (y - y3)) / det;
+    const l3 = 1 - l1 - l2;
+    if (l1 >= -1e-12 && l2 >= -1e-12 && l3 >= -1e-12) return l1 * v[a + 2]! + l2 * v[b + 2]! + l3 * v[c + 2]!;
+  }
+  return null;
+}
+
 /**
  * Shortest 3-D distance from p to the TIN surface, searching triangles within
  * `reach` in plan. Null when no triangle is within reach.

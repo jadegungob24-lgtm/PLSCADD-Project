@@ -141,7 +141,8 @@ export function buildMenus(): Menu[] {
       items: [
         { label: 'Import XYZ Terrain…', run: () => pickFile('.xyz,.txt', (f) => { void importXyzFile(f); }), enabled: hasProject },
         { label: 'Import PFL Terrain…', run: () => pickFile('.pfl,.txt', (f) => { void beginPflImport(f); }), enabled: hasProject },
-        { label: 'Import CSV / TXT Survey Points…', run: () => pickFile('.csv,.txt,.tsv,.dat,.pts', (f) => { void beginCsvImport(f); }), enabled: hasProject },
+        { label: 'Import Points from CSV / Excel…', run: () => pickFile('.csv,.txt,.tsv,.dat,.pts,.xlsx,.xls', (f) => { void beginCsvImport(f); }), enabled: hasProject },
+        { label: 'Paste Points from Excel…', run: () => app().openDialog('pastePoints'), enabled: hasProject },
         { label: 'Import DEM (ASCII Grid / GeoTIFF)…', run: () => pickFile('.asc,.grd,.tif,.tiff', (f) => { void beginDemImport(f); }), enabled: hasProject },
         { label: 'Import LAS Point Cloud…', run: () => pickFile('.las', (f) => { void beginLasImport(f); }), enabled: hasProject },
         { label: 'Import Break Lines (BRK)…', run: () => pickFile('.brk,.txt', (f) => { void importBrkFile(f); }), enabled: hasProject },

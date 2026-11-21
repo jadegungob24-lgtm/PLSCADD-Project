@@ -19,7 +19,7 @@ export function idBatch(): () => string {
  * not yet defined are created (flagged as defaults, "on ground") and reported,
  * since the manual requires every code to exist in the feature code table.
  */
-export function addTerrainPoints(draft: Project, points: TerrainPoint[]): { createdCodes: number[] } {
+export function addTerrainPoints(draft: Project, points: TerrainPoint[], newCodesOnGround = true): { createdCodes: number[] } {
   const known = new Set(draft.terrain.featureCodes.map((f) => f.code));
   const created: number[] = [];
   for (const p of points) {
@@ -27,7 +27,7 @@ export function addTerrainPoints(draft: Project, points: TerrainPoint[]): { crea
       known.add(p.code);
       created.push(p.code);
       draft.terrain.featureCodes.push(
-        makeFeatureCode(p.code, `Code ${p.code} (created on import)`, true, 'default', draft.terrain.featureCodes.length),
+        makeFeatureCode(p.code, `Code ${p.code} (created on import)`, newCodesOnGround, 'default', draft.terrain.featureCodes.length),
       );
     }
     draft.terrain.points.push(p);

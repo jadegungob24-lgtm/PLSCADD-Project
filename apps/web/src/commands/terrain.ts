@@ -1,10 +1,10 @@
 import {
-  buildAlignment, FT, isGeographic, makeTransformer, stationToXY, tinProfile, WGS84_GEOGRAPHIC, withoutSmallAngles,
+  buildAlignment, elevationOnTin, FT, indexTin, isGeographic, makeTransformer, stationToXY, tinProfile, WGS84_GEOGRAPHIC, withoutSmallAngles,
   type Transformer, type XY,
 } from '@tlcad/engine';
 import { addTerrainPoints, idBatch, missingCodes, newId, type Crs, type Project, type TerrainPoint } from '@tlcad/model';
 import {
-  demToPoints, parseAsciiGrid, parseBrk, parseDelimited, parseGeoTiff, parseLas, parsePfl, parseXyz, readLasInfo,
+  demToPoints, parseAsciiGrid, parseBrk, parseDelimited, parseGeoTiff, parseLas, parsePfl, parseXlsx, parseXyz, readLasInfo, sheetToTsv,
   writeBrk, writePfl, writeXyz,
   type DelimitedOptions, type DemGrid, type DemOptions, type ImportMessage, type LasInfo, type LasOptions, type PflOrigin,
 } from '@tlcad/io';
@@ -31,7 +31,7 @@ const fileBase = (p: Project) => p.meta.name.replace(/[^\w\-. ]+/g, '_');
 const fileUnits = (p: Project) => (p.settings.unitSystem === 'US' ? 'US' : 'SI');
 
 /** Add parsed points (and optionally an alignment) to the project as one undoable command. */
-function commitPoints(fileName: string, points: TerrainPoint[], messages: ImportMessage[], alignment?: { pis: XY[]; startStation: number } | null) {
+function commitPoints(fileName: string, points: TerrainPoint[], messages: ImportMessage[], alignment?: { pis: XY[]; startStation: number } | null, newCodesOnGround = true) {
   report(fileName, messages);
   const project = app().project;
   if (!project || points.length === 0) {
@@ -41,7 +41,7 @@ function commitPoints(fileName: string, points: TerrainPoint[], messages: Import
   const newCodes = missingCodes(project, points.map((p) => p.code));
   const replaceAlignment = !!alignment && project.alignments.length > 0;
   app().exec(`Import ${points.length} terrain points`, (d) => {
-    addTerrainPoints(d as Project, points);
+    addTerrainPoints(d as Project, points, newCodesOnGround);
     if (alignment) {
       const nextId = idBatch();
       d.alignments = [{
@@ -52,7 +52,7 @@ function commitPoints(fileName: string, points: TerrainPoint[], messages: Import
   });
   app().addLog('info', `${fileName}: imported ${points.length} terrain points.`);
   if (newCodes.length) {
-    app().addLog('warning', `${fileName}: feature code(s) ${newCodes.join(', ')} were not in the feature code table and were created as ground codes. Review them in Terrain ▸ Feature Codes and Clearances.`);
+    app().addLog('warning', `${fileName}: feature code(s) ${newCodes.join(', ')} were not in the feature code table and were created as ${newCodesOnGround ? 'ground' : 'non-ground'} codes. Review them in Terrain ▸ Feature Codes and Clearances.`);
   }
   if (alignment) app().addLog(replaceAlignment ? 'warning' : 'info', `${fileName}: ${replaceAlignment ? 'the existing alignments were replaced by' : 'created'} the alignment defined by the file (${alignment.pis.length} PIs).`);
   app().zoomExtents();
@@ -63,8 +63,27 @@ export async function importXyzFile(file: File) {
   commitPoints(file.name, r.points, r.messages);
 }
 
+/**
+ * Delimited text or an Excel workbook (.xlsx): opens the column-mapping dialog. A workbook's
+ * sheets are offered as tab-separated text; the first sheet with data is shown first.
+ */
 export async function beginCsvImport(file: File) {
+  if (/\.xlsx$/i.test(file.name)) {
+    let sheets;
+    try { sheets = parseXlsx(new Uint8Array(await file.arrayBuffer())); } catch (e) { app().addLog('error', `${file.name}: ${e instanceof Error ? e.message : String(e)}`); return; }
+    const list = sheets.map((s) => ({ name: s.name, text: sheetToTsv(s) }));
+    const first = list.find((s) => s.text.trim() !== '') ?? list[0]!;
+    app().setPendingFile({ name: file.name, text: first.text, sheets: list }, 'importCsv');
+    return;
+  }
+  if (/\.xls$/i.test(file.name)) { app().addLog('error', `${file.name}: the old binary Excel format (.xls) is not supported. In Excel use File ▸ Save As ▸ Excel Workbook (.xlsx) or CSV.`); return; }
   app().setPendingFile({ name: file.name, text: await file.text() }, 'importCsv');
+}
+
+/** Coordinates pasted from Excel or another table (tab-separated when copied from a spreadsheet). */
+export function beginPastedImport(text: string) {
+  if (!text.trim()) { app().addLog('warning', 'Nothing was pasted.'); return; }
+  app().setPendingFile({ name: 'Pasted coordinates', text }, 'importCsv');
 }
 
 /** Transformation from WGS 84 longitude/latitude to the project CRS, or null when the project has none. */
@@ -88,8 +107,26 @@ export function finishCsvImport(options: DelimitedOptions, lonLat: boolean) {
     });
     if (bad) r.messages.push({ level: 'warning', text: `${bad} point(s) lie outside the project coordinate system and were skipped.` });
   }
+  if (options.zMode === 'surface') {
+    // Elevations from the TIN surface (§6.4); points outside it are left out and reported.
+    const tin = computeDerived(p).tin;
+    if (!tin) { app().addLog('error', `${f.name}: elevations from the TIN need the TIN (Terrain ▸ Use TIN) and enough ground points.`); return; }
+    const ix = indexTin(tin, 25);
+    let outside = 0;
+    r.points = r.points.filter((q) => { const z = elevationOnTin(ix, q.x, q.y); if (z === null) { outside++; return false; } q.z = z; return true; });
+    if (outside) r.messages.push({ level: 'warning', text: `${outside} point(s) lie outside the TIN surface, so they have no elevation, and were skipped.` });
+  }
+  // Points whose elevations are not surveyed (from the TIN or one value) are plot points: new codes are created off the
+  // ground so the TIN and ground profiles do not change.
+  const plotOnly = (options.zMode ?? 'column') !== 'column';
+  if (plotOnly) {
+    const ground = [...new Set(r.points.map((q) => q.code))].filter((c) => p.terrain.featureCodes.find((k) => k.code === c)?.onGround);
+    if (ground.length) r.messages.push({ level: 'warning', text: `Feature code(s) ${ground.join(', ')} are ground codes, so these points will become part of the TIN and ground profiles. Use a code that is not on the ground to only plot them.` });
+  }
   app().setPendingFile(null, null);
-  commitPoints(f.name, r.points, r.messages);
+  commitPoints(f.name, r.points, r.messages, null, !plotOnly);
+  // Show the imported points in the plan view.
+  if (r.points.length) app().showView('plan');
 }
 
 export async function beginPflImport(file: File) {

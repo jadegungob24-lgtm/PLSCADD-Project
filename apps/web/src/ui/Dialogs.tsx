@@ -8,7 +8,7 @@ import { APP_VERSION, useApp } from '../store/appStore';
 import type { ProjectSummary, RevisionSummary } from '../db/repository';
 import { commands } from '../commands/menus';
 import {
-  CrsDialog, CsvImportDialog, DemImportDialog, FeatureCodesDialog, InterpolateDialog, LasImportDialog, PflImportDialog, TerrainPointsDialog,
+  CrsDialog, CsvImportDialog, PastePointsDialog, DemImportDialog, FeatureCodesDialog, InterpolateDialog, LasImportDialog, PflImportDialog, TerrainPointsDialog,
 } from './TerrainDialogs';
 import { CableLibraryDialog, StructureLibraryDialog } from './LibraryDialogs';
 import { SpotDialog, StringingDialog, StructureTableDialog } from './LineDialogs';
@@ -259,6 +259,7 @@ export function Dialogs() {
       {dialog === 'features' && <FeatureStatusDialog close={close} />}
       {dialog === 'about' && <AboutDialog close={close} />}
       {dialog === 'importCsv' && <CsvImportDialog close={closeImport} />}
+      {dialog === 'pastePoints' && hasProject && <PastePointsDialog close={close} />}
       {dialog === 'importPfl' && <PflImportDialog close={closeImport} />}
       {dialog === 'featureCodes' && hasProject && <FeatureCodesDialog close={close} />}
       {dialog === 'terrainPoints' && hasProject && <TerrainPointsDialog close={close} />}

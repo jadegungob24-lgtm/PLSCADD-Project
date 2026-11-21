@@ -5,3 +5,4 @@ export * from './terrainFormats2';
 export * from './drawing';
 export * from './cad';
 export * from './reports';
+export * from './xlsx';

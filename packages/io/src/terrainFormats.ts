@@ -233,6 +233,12 @@ export interface DelimitedOptions {
   /** Feature code given to every point when no code column is mapped or the cell is empty. */
   defaultCode: number;
   unit: LengthUnit;
+  /**
+   * Where elevations come from when there is no Z column (colZ = 0): one constant value (in unit), or the
+   * project's TIN surface, filled in by the caller (points are then returned with z = NaN).
+   */
+  zMode?: 'column' | 'constant' | 'surface';
+  zConstant?: number;
 }
 
 /** Split one line of delimited text. A blank delimiter means any run of spaces or tabs. */
@@ -259,25 +265,39 @@ export function sniffDelimited(text: string): { delimiter: Delimiter; skipLines:
   for (const d of [',', ';', '\t', ' '] as Delimiter[]) {
     const counts = lines.map((l) => splitDelimited(l, d).length);
     const mode = counts.sort((a, b) => a - b)[Math.floor(counts.length / 2)] ?? 0;
-    const score = mode >= 3 ? counts.filter((c) => c === mode).length * 10 + (d === ' ' ? 0 : 1) : -1;
+    // Two columns are enough for plan coordinates (X, Y) without elevations.
+    const score = mode >= 2 ? counts.filter((c) => c === mode).length * 10 + (d === ' ' ? 0 : 1) + (mode >= 3 ? 5 : 0) : -1;
     if (score > bestScore) { bestScore = score; best = d; }
   }
-  // Heading lines: leading lines with fewer than three numeric cells.
+  // Heading lines: leading lines with fewer than two numeric cells.
   let skip = 0;
   for (const l of lines) {
-    const numeric = splitDelimited(l, best).filter((c) => c !== '' && Number.isFinite(Number(c))).length;
-    if (numeric >= 3) break;
+    const numeric = splitDelimited(l, best).filter((c) => c !== '' && Number.isFinite(cellNumber(c, best))).length;
+    if (numeric >= 2) break;
     skip++;
   }
   const first = lines[skip];
   return { delimiter: best, skipLines: skip, columns: first ? splitDelimited(first, best).length : 0 };
 }
 
+/**
+ * Number in a cell. Spreadsheets copy numbers with thousands separators ("1,234.56"); where the comma is not the
+ * delimiter, a comma that groups digits in threes is read as a thousands separator. Decimal commas are not converted.
+ */
+export function cellNumber(s: string, d: Delimiter): number {
+  const t = s.trim();
+  if (t === '') return NaN;
+  if (d !== ',' && /^[-+]?\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) return Number(t.replace(/,/g, ''));
+  return Number(t);
+}
+
 export function parseDelimited(text: string, o: DelimitedOptions, src: TerrainPoint['src'] = 'imported'): ParsedTerrain {
   const messages: ImportMessage[] = [];
-  if (o.colX < 1 || o.colY < 1 || o.colZ < 1) {
-    return { points: [], messages: [msg('error', 'Columns for X, Y and Z must be selected.')] };
+  const zMode = o.zMode ?? 'column';
+  if (o.colX < 1 || o.colY < 1 || (zMode === 'column' && o.colZ < 1)) {
+    return { points: [], messages: [msg('error', zMode === 'column' ? 'Columns for X, Y and Z must be selected.' : 'Columns for X and Y must be selected.')] };
   }
+  if (zMode === 'constant' && !Number.isFinite(o.zConstant)) return { points: [], messages: [msg('error', 'Enter the elevation to give the points.')] };
   const f = o.unit === 'ft' ? FT : 1;
   const nextId = idBatch();
   const points: TerrainPoint[] = [];
@@ -286,8 +306,9 @@ export function parseDelimited(text: string, o: DelimitedOptions, src: TerrainPo
     if (n < o.skipLines || line.trim() === '') return;
     const c = splitDelimited(line, o.delimiter);
     const cell = (col: number) => (col > 0 ? c[col - 1] ?? '' : '');
-    const number = (col: number) => (cell(col) === '' ? NaN : Number(cell(col)));
-    const x = number(o.colX), y = number(o.colY), z = number(o.colZ);
+    const number = (col: number) => cellNumber(cell(col), o.delimiter);
+    const x = number(o.colX), y = number(o.colY);
+    const z = zMode === 'column' ? number(o.colZ) : zMode === 'constant' ? o.zConstant! : 0;
     const h = o.colH > 0 && cell(o.colH) !== '' ? number(o.colH) : 0;
     const code = o.colCode > 0 && cell(o.colCode) !== '' ? number(o.colCode) : o.defaultCode;
     if (![x, y, z, h].every(Number.isFinite) || !Number.isInteger(code)) {
@@ -296,11 +317,31 @@ export function parseDelimited(text: string, o: DelimitedOptions, src: TerrainPo
     }
     if (h < 0) { errors.push(`Line ${n + 1}: obstacle height is negative.`); return; }
     points.push({
-      id: nextId(), desc: cell(o.colDesc), x: x * f, y: y * f, z: z * f, code, h: h * f,
+      id: nextId(), desc: cell(o.colDesc), x: x * f, y: y * f, z: zMode === 'surface' ? NaN : z * f, code, h: h * f,
       profNote: '', planNote: '', active: true, src,
     });
   });
   limitMessages(errors, messages, 'lines');
   if (points.length === 0 && errors.length === 0) messages.push(msg('error', 'No data lines were found.'));
   return { points, messages };
+}
+
+/**
+ * Starting guess for the column roles of a delimited table: columns whose data cells are all numbers give
+ * X, Y and (when there is a third) Z in order; with four numeric columns the first is taken as a point
+ * number (description). The first text column becomes the description. The user confirms in the dialog.
+ */
+export function guessColumns(text: string, d: Delimiter, skipLines: number): { colX: number; colY: number; colZ: number; colDesc: number } {
+  const rows = text.split(/\r?\n/).filter((l) => l.trim() !== '').slice(skipLines, skipLines + 20).map((l) => splitDelimited(l, d));
+  const n = Math.max(0, ...rows.map((r) => r.length));
+  const numeric: number[] = [], textCols: number[] = [];
+  for (let c = 0; c < n; c++) {
+    const cells = rows.map((r) => r[c] ?? '').filter((s) => s.trim() !== '');
+    if (!cells.length) continue;
+    if (cells.every((s) => Number.isFinite(cellNumber(s, d)))) numeric.push(c + 1); else textCols.push(c + 1);
+  }
+  let desc = textCols[0] ?? 0;
+  let nums = numeric;
+  if (nums.length >= 4) { if (!desc) desc = nums[0]!; nums = nums.slice(1); }
+  return { colX: nums[0] ?? 1, colY: nums[1] ?? 2, colZ: nums[2] ?? 0, colDesc: desc };
 }

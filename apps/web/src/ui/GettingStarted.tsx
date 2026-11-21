@@ -22,7 +22,7 @@ interface Step {
 const STEPS: Step[] = [
   { title: 'Create a project and choose its units', where: 'File ▸ New Project', dialog: 'new', done: (p) => !!p },
   { title: 'Set the coordinate system', where: 'Project ▸ Coordinate System', dialog: 'crs', optional: true, done: (p) => !!p?.settings.crs },
-  { title: 'Import the survey', where: 'Terrain ▸ Import XYZ / CSV / PFL / DEM / LAS', view: 'plan', done: (p) => (p?.terrain.points.length ?? 0) > 0 },
+  { title: 'Import the survey', where: 'Terrain ▸ Import XYZ / CSV / Excel / PFL / DEM / LAS, or Paste Points from Excel', view: 'plan', done: (p) => (p?.terrain.points.length ?? 0) > 0 },
   { title: 'Feature codes and required clearances', where: 'Terrain ▸ Feature Codes and Clearances', dialog: 'featureCodes', done: (p) => !!p?.terrain.featureCodes.some((c) => Object.values(c.clearances).some((r) => r.rv !== null)) },
   { title: 'Draw the alignment (P.I.s)', where: 'Plan view ▸ Add P.I. tool', view: 'plan', tool: 'addPi', done: (_p, d) => d.lines.some((l) => l.geom) },
   { title: 'Cables (conductors and ground wires)', where: 'Conductor ▸ Cable Library', dialog: 'cables', done: (p) => (p?.cableLibrary.length ?? 0) > 0 },

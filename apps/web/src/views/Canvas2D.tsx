@@ -245,12 +245,27 @@ export function Canvas2D({ mode }: { mode: 'plan' | 'profile' }) {
         ctx.stroke();
       }
       // ---- survey points; obstacle points (h > 0 or not on ground) drawn larger
+      const labelled: [number, number, string, string][] = [];
       for (const p of dd.points) {
         const [px, py] = W(p.x, p.y);
         if (px < -4 || py < -4 || px > s.w + 4 || py > s.h + 4) continue;
         ctx.fillStyle = colorOf(p.code);
-        const r = p.h > 0 || dd.codes.get(p.code)?.onGround === false ? 2.5 : 1.5;
+        const offGround = dd.codes.get(p.code)?.onGround === false;
+        if (offGround) {
+          // Plotted (non-ground) points: a ring marker, labelled with the description.
+          ctx.strokeStyle = colorOf(p.code); ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(px, py, 4.5, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillRect(px - 1.5, py - 1.5, 3, 3);
+          if (p.desc) labelled.push([px, py, p.desc, colorOf(p.code)]);
+          continue;
+        }
+        const r = p.h > 0 ? 2.5 : 1.5;
         ctx.fillRect(px - r, py - r, 2 * r, 2 * r);
+      }
+      // Labels only while they stay readable.
+      if (labelled.length && labelled.length <= 400) {
+        ctx.font = '11px Segoe UI, sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+        for (const [px, py, text, col] of labelled) { ctx.fillStyle = col; ctx.fillText(text, px + 6, py - 4); }
       }
       // ---- alignments (the PI being dragged is shown at its new place)
       const drag = dragPi.current;

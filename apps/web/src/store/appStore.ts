@@ -32,6 +32,8 @@ export const VIEW_LABEL: Record<ViewKind, string> = {
 };
 export type TileMode = 'single' | 'vertical' | 'horizontal' | 'quad';
 
+export interface PendingFile { name: string; text: string; sheets?: { name: string; text: string }[] }
+
 /** A clearance marker: a point, or a line between two points (e.g. the closest points of two wires). */
 export interface Marker {
   status: 'violation' | 'questionable' | 'ok';
@@ -47,7 +49,7 @@ export type DialogKind =
   | 'new' | 'open' | 'revisions' | 'features' | 'about'
   | 'importCsv' | 'importPfl' | 'featureCodes' | 'terrainPoints'
   | 'importDem' | 'importLas' | 'crs' | 'interpolate'
-  | 'cables' | 'structureTypes' | 'spot' | 'structureTable' | 'stringing' | 'criteria' | 'sheetSettings' | 'annotation' | 'attachments' | 'materials' | 'reports' | 'gettingStarted' | null;
+  | 'cables' | 'structureTypes' | 'spot' | 'structureTable' | 'stringing' | 'criteria' | 'sheetSettings' | 'annotation' | 'attachments' | 'materials' | 'reports' | 'gettingStarted' | 'pastePoints' | null;
 
 /** Interactive tool of the plan view (manual §6.3.1: add, insert, move, delete P.I.). */
 export type Tool = 'select' | 'addPi' | 'insertPi' | 'movePi' | 'deletePi' | 'addStructure' | 'moveStructure' | 'deleteStructure' | 'sagSection';
@@ -107,7 +109,8 @@ interface AppState {
   activePane: number;
   activeTool: Tool;
   /** Text of a file chosen for an import that needs options (CSV mapping, PFL origin). */
-  pendingFile: { name: string; text: string } | null;
+  /** File waiting for import options; an Excel workbook also carries each sheet as tab-separated text. */
+  pendingFile: PendingFile | null;
   /** Parsed binary file waiting for import options (DEM grid, LAS point cloud). */
   pendingData: { name: string; data: unknown } | null;
   /** Alignment that the P.I. tools act on (manual: the profile of every alignment is always shown). */
@@ -153,7 +156,7 @@ interface AppState {
   setActivePane(i: number): void;
   setCursor(c: Partial<CursorStatus>): void;
   setTool(t: Tool): void;
-  setPendingFile(f: { name: string; text: string } | null, dialog: DialogKind): void;
+  setPendingFile(f: PendingFile | null, dialog: DialogKind): void;
   setPendingData(f: { name: string; data: unknown } | null, dialog: DialogKind): void;
   setActiveAlignment(id: string | null): void;
   setSpotType(id: string | null): void;
